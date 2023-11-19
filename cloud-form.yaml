@@ -1,0 +1,112 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "Template to deploy VPC and EC2 instance"
+
+Parameters:
+  vpcCidrBlock:
+    Description: Our VPC CidrBlock
+    Type: String
+    Default: 100.20.0.0/16
+
+  SubnetCidrBlock:
+    Description: Our Subnet CidrBlock
+    Type: String
+    Default: 100.20.0.0/24
+
+  AZ:
+    Description: AZ of my subnet
+    Type: String
+    Default: us-east-2a
+
+  myImageID:
+    Description: AMI to launch instance from
+    Type: String
+    Default: ami-011ebac22fcbf137f
+
+  InstanceType:
+    Description: My EC2 instance type
+    Type: String
+    Default: t2.micro
+
+  KeyName:
+    Description: My EF2 instance private key
+    Type: String
+    Default: Fonsah_key_pair_Ohio
+
+  # mySecurityGroup:
+  #   Description: Security group of my instance
+  #   Type: String
+  #   Default: sg-08484f5a049db1fa4
+
+Resources:
+  MyVPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !Ref vpcCidrBlock
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      Tags:
+        - Key: Name
+          Value: ash-demo-vpc
+
+  MySubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !Ref AZ
+      VpcId: !Ref MyVPC
+      CidrBlock: !Ref SubnetCidrBlock
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: ash-demo-subnet
+
+  MyInternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: ash-demo-IG
+
+  AttachGateway:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref MyVPC
+      InternetGatewayId: !Ref MyInternetGateway
+
+  MySecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: demo-sg
+      GroupDescription: EC2 instance security group
+      VpcId: !Ref MyVPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: ash-demo-sg
+
+  myEC2Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      KeyName: !Ref KeyName
+      ImageId: !Ref myImageID
+      InstanceType: !Ref InstanceType
+      SubnetId: !Ref MySubnet
+      SecurityGroupIds:
+        - !Ref MySecurityGroup
+      # UserData: !Base64 |
+      #   #!/bin/bash -ex
+      #   # put your script here
+      Tags:
+        - Key: Name
+          Value: ash-demo
+
+Outputs:
+    InstanceID:
+      Description: ID of the EC2 Instance
+      Value: !Ref myEC2Instance
+      Export:
+        Name:
+          Fn::Sub: ${AWS::StackName}-InstanceID
