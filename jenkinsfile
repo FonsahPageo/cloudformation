@@ -1,6 +1,5 @@
 pipeline {
     agent any
-
     environment {
         AWS_DEFAULT_REGION = 'us-east-2' // Replace with your AWS region
         STACK_NAME = 'ash-demo' // Replace with your CloudFormation stack name
